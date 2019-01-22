@@ -1,4 +1,5 @@
 import io
+import math
 
 from google.cloud import vision
 
@@ -43,15 +44,44 @@ class ImageProcessor:
         blue = tmp_colour.color.blue
         green = tmp_colour.color.green
 
-        # TODO: Probably can remove 'number' variable here, I think it's just
-        #       for debug.
-        #       Cleanup comparison of values.
+        # Basic colour RGB values:
+        # https://www.rapidtables.com/web/color/RGB_Color.html
+        basic_colours = [("red", 255, 0, 0), ("lime", 0, 255, 0),
+                         ("blue", 0, 0, 255), ("yellow", 255, 255, 0),
+                         ("cyan", 0, 255, 255), ("magenta", 255, 0, 255)]
+
+        # basic_colours = [("white", 0, 0, 0), ("black", 255, 255, 255),
+        #                  ("red", 255, 0, 0), ("lime", 0, 255, 0),
+        #                  ("blue", 0, 0, 255), ("yellow", 255, 255, 0),
+        #                  ("cyan", 0, 255, 255), ("magenta", 255, 0, 255),
+        #                  ("silver", 192, 192, 192), ("gray", 128, 128, 128),
+        #                  ("maroon", 128, 0, 0), ("olive", 128, 128, 0),
+        #                  ("green", 0, 128, 0), ("purple", 128, 0, 128),
+        #                  ("teal", 0, 128, 128), ("navy", 0, 0, 128)]
+
+        # Max distance is between Black (0, 0, 0) and White (255, 255, 255).
+        # Therefore maximum distance is sqrt(3 * 255^2) = 442 so set dist to
+        # a value greater than 441.
+        dist = 1000
+        dominant_colour = ""
+        for colour in basic_colours:
+            tmp_red = colour[1]
+            tmp_green = colour[2]
+            tmp_blue = colour[3]
+            x = (red - tmp_red) ** 2
+            y = (green - tmp_green) ** 2
+            z = (blue - tmp_blue) ** 2
+            tmp_dist = math.sqrt(x + y + z)
+            if tmp_dist < dist:
+                dist = tmp_dist
+                dominant_colour = colour[0]
+
         # Determine whether Red dominates Blue
-        (dominant_colour, num) = \
-            ("Red", red) if red > blue else ("Blue", blue)
+        # (dominant_colour, num) = \
+        #     ("Red", red) if red > blue else ("Blue", blue)
 
         # Determine whether Green dominates the maximum of Red and Blue
-        (dominant_colour, num) = \
-            ("Green", green) if green > num else (dominant_colour, num)
+        # (dominant_colour, num) = \
+        #     ("Green", green) if green > num else (dominant_colour, num)
 
         return dominant_colour

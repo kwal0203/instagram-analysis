@@ -26,7 +26,6 @@ def process_image(image_path, name):
     print("\n")
 
     return [face_found, not face_found, dominant_colour]
-    # return (True, False, dominant_colour) if face_found else (False, True, dominant_colour)
 
 
 # Start program
