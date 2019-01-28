@@ -25,16 +25,12 @@ class ImageProcessor:
         self.face_url = self.azure_url + 'face/v1.0/'
 
     def google_request(self):
+        # Possible features:
+        # LABEL_DETECTION, FACE_DETECTION, LOGO_DETECTION, TEXT_DETECTION,
+        # DOCUMENT_TEXT_DETECTION, SAFE_SEARCH_DETECTION, WEB_DETECTION,
+        # LANDMARK_DETECTION, IMAGE_PROPERTIES
         features = [
             types.Feature(type=enums.Feature.Type.LABEL_DETECTION),
-            types.Feature(type=enums.Feature.Type.FACE_DETECTION),
-            types.Feature(type=enums.Feature.Type.LOGO_DETECTION),
-            types.Feature(type=enums.Feature.Type.DOCUMENT_TEXT_DETECTION),
-            types.Feature(type=enums.Feature.Type.SAFE_SEARCH_DETECTION),
-            types.Feature(type=enums.Feature.Type.TEXT_DETECTION),
-            types.Feature(type=enums.Feature.Type.WEB_DETECTION),
-            types.Feature(type=enums.Feature.Type.LANDMARK_DETECTION),
-            types.Feature(type=enums.Feature.Type.IMAGE_PROPERTIES),
         ]
 
         api_requests = []
@@ -81,15 +77,15 @@ class ImageProcessor:
         # Analysis is a JSON object that contains:
         # Categories, color, description, requestId, metadata
         analysis = response.json()
-        print("Dominant foreground colour: {}".format(
-            analysis['color']['dominantColorForeground']))
-        print("Dominant background colour: {}".format(
-            analysis['color']['dominantColorBackground']))
-        print("Categories: ", end="")
-        for tag in analysis['description']['tags']:
-            print(tag)
+        # print("Dominant foreground colour: {}".format(
+        #     analysis['color']['dominantColorForeground']))
+        # print("Dominant background colour: {}".format(
+        #     analysis['color']['dominantColorBackground']))
+        # print("Categories: ", end="")
+        # for tag in analysis['description']['tags']:
+        #     print(tag)
 
-        return response
+        return analysis
 
     def detect_all(self):
         # Get information from Google Vision API
@@ -100,7 +96,7 @@ class ImageProcessor:
         # Get information from Microsoft Face API
         print("----- Return all information from Microsoft Face API -----")
         microsoft_face_response = self.microsoft_face_request()
-        print(microsoft_face_response)
+        # print(microsoft_face_response)
 
         # Get information from Microsoft Computer Vision API
         print("----- Return all information from Microsoft Object API -----")

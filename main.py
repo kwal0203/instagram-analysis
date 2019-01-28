@@ -57,24 +57,52 @@ if __name__ == '__main__':
             file_name = str(row.name) + ".jpg"
             goog_cv, msft_face, msft_cv = process_image(tmp_path, file_name)
 
-            faces = len(msft_face)
+            # Create string of labels returned from Google
+            labels = ""
+            space = False
+            for label in goog_cv.responses[0].label_annotations:
+                if space:
+                    labels += " "
+                space = True
+                labels += label.description
 
-            # FIX
-            # new_csv.append((file_name, short_code, likes, followers, posts,
-            #                 following, model, product, dom_colour))
+            # Need to fix this for multiple faces
+            faces = len(msft_face)
+            model_strategy = (faces > 0)
+            product_strategy = not model_strategy
+
+            # Default attributes
+            smile = False
+            gender = "unknown"
+            age = -1
+            emotion = "unknown"
+
+            if msft_face:
+                smile = msft_face['faceAttributes']['smile']
+                gender = msft_face['faceAttributes']['gender']
+                age = msft_face['faceAttributes']['age']
+                emotion = max(
+                    msft_face['faceAttributes']['emotion'].keys(),
+                    key=(lambda key: msft_face['faceAttributes']['emotion'][key]))
+
+            # Colour attributes from Microsoft CV API
+            dom_fore_colour = msft_cv['color']['dominantColorForeground']
+            dom_back_colour = msft_cv['color']['dominantColorBackground']
+
             new_csv.append((file_name, short_code, likes, followers, posts,
-                            following, faces))
+                            following, faces, model_strategy,
+                            product_strategy, smile, gender, age, emotion,
+                            dom_fore_colour, dom_back_colour, labels))
         else:
             print("Image short-code: {} not found".format(short_code))
 
         # Convert all detected features/relevant information to Pandas
         # DataFrame and then convert that to CSV format for saving on disk.
-        # column_names = ['file_name', 'short_code', 'likes', 'followers',
-        #                 'posts', 'following', 'model', 'product',
-        #                 'dominant_colour']
         column_names = ['file_name', 'short_code', 'likes', 'followers',
-                        'posts', 'following', 'model', 'product',
-                        'dominant_colour']
+                        'posts', 'following', 'faces', 'model_strategy',
+                        'product_strategy', 'smile', 'gender', 'age',
+                        'emotion', 'dom_fore_colour', 'dom_back_colour',
+                        'labels']
         frame = pd.DataFrame(new_csv, columns=column_names)
         frame.to_csv('output/details.csv', index=None)
 
