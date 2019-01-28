@@ -1,13 +1,17 @@
 import io
 import math
+import requests
+import cognitive_face
 
 from google.cloud import vision
+from google.cloud.vision import types
+from google.cloud.vision import enums
 
 
-# This class is responsible for doing all of the 'image analysis'. This
-# analysis includes using Google Cloud Vision API and OpenCV to obtain various
-# features associated with a given image. These features are subsequently used
-# in a regression analysis.
+# This class is responsible for obtaining/parsing information received from
+# Google/Microsoft Computer Vision APIs and extracting visual 'features' from
+# images using OpenCV. The features obtained from the APIs and OpenCV
+# processing will be used in regression analysis.
 class ImageProcessor:
     def __init__(self, path):
         self.path = path
@@ -15,6 +19,98 @@ class ImageProcessor:
             from_service_account_json('key.json')
         self.opened_file = io.open(self.path, 'rb').read()
         self.image = vision.types.Image(content=self.opened_file)
+        self.microsoft_key = '2d8273cbfa7a42beaeefa81b444fa472'
+        self.azure_url = 'https://australiaeast.api.cognitive.microsoft.com/'
+        self.vision_url = self.azure_url + 'vision/v2.0/analyze'
+        self.face_url = self.azure_url + 'face/v1.0/'
+
+    def google_request(self):
+        features = [
+            types.Feature(type=enums.Feature.Type.LABEL_DETECTION),
+            types.Feature(type=enums.Feature.Type.FACE_DETECTION),
+            types.Feature(type=enums.Feature.Type.LOGO_DETECTION),
+            types.Feature(type=enums.Feature.Type.DOCUMENT_TEXT_DETECTION),
+            types.Feature(type=enums.Feature.Type.SAFE_SEARCH_DETECTION),
+            types.Feature(type=enums.Feature.Type.TEXT_DETECTION),
+            types.Feature(type=enums.Feature.Type.WEB_DETECTION),
+            types.Feature(type=enums.Feature.Type.LANDMARK_DETECTION),
+            types.Feature(type=enums.Feature.Type.IMAGE_PROPERTIES),
+        ]
+
+        api_requests = []
+        image = types.Image(content=self.opened_file)
+
+        request = types.AnnotateImageRequest(image=image, features=features)
+        api_requests.append(request)
+
+        return self.client.batch_annotate_images(api_requests)
+
+    def microsoft_face_request(self):
+        cognitive_face.Key.set(self.microsoft_key)
+        cognitive_face.BaseUrl.set(self.face_url)
+        attributes = 'age,gender,smile,emotion'
+        faces = cognitive_face.face.detect(self.path, attributes=attributes)
+
+        # List of facial attributes we can get:
+        # age, gender, headPose, smile, facialHair, glasses, emotion, hair,
+        # makeup, occlusion, accessories, blur, exposure, noise
+        print("Number of faces:   {}".format(len(faces)), end='\n\n')
+        for face in faces:
+            curr_emotion = max(
+                face['faceAttributes']['emotion'].keys(),
+                key=(lambda key: face['faceAttributes']['emotion'][key]))
+
+            print("Smile:   {}".format(face['faceAttributes']['smile']))
+            print("Gender:  {}".format(face['faceAttributes']['gender']))
+            print("Age:     {}".format(face['faceAttributes']['age']))
+            print("Emotion: {}".format(curr_emotion))
+            print("\n")
+
+        return faces
+
+    def microsoft_cv_request(self):
+        # Read the image into a byte array
+        headers = {'Ocp-Apim-Subscription-Key': self.microsoft_key,
+                   'Content-Type': 'application/octet-stream'}
+        params = {'visualFeatures': 'Categories,Description,Color'}
+        response = requests.post(
+            self.vision_url, headers=headers, params=params,
+            data=self.opened_file)
+        response.raise_for_status()
+
+        # Analysis is a JSON object that contains:
+        # Categories, color, description, requestId, metadata
+        analysis = response.json()
+        print("Dominant foreground colour: {}".format(
+            analysis['color']['dominantColorForeground']))
+        print("Dominant background colour: {}".format(
+            analysis['color']['dominantColorBackground']))
+        print("Categories: ", end="")
+        for tag in analysis['description']['tags']:
+            print(tag)
+
+        return response
+
+    def detect_all(self):
+        # Get information from Google Vision API
+        print("----- Return all information from Google Vision API -----")
+        google_response = self.google_request()
+        # print(google_response)
+
+        # Get information from Microsoft Face API
+        print("----- Return all information from Microsoft Face API -----")
+        microsoft_face_response = self.microsoft_face_request()
+        print(microsoft_face_response)
+
+        # Get information from Microsoft Computer Vision API
+        print("----- Return all information from Microsoft Object API -----")
+        microsoft_cv_response = self.microsoft_cv_request()
+        # print(microsoft_cv_response)
+
+        return google_response, microsoft_face_response, microsoft_cv_response
+
+    # The following functions can be used to query API services individually
+    # rather than doing everything together as above in 'detect_all().
 
     # This function detects faces in a given image using the Google Cloud Vision
     # API.

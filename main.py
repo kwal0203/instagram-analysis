@@ -17,15 +17,7 @@ def process_image(image_path, name):
     # Initialize ImageProcessor
     image_processor = ImageProcessor(image_path)
 
-    # Detect faces and colours
-    face_found = image_processor.detect_faces()
-    dominant_colour = image_processor.detect_colours()
-
-    print("Face found: {} and Dominant colour is: {}".format(
-        face_found, dominant_colour))
-    print("\n")
-
-    return [face_found, not face_found, dominant_colour]
+    return image_processor.detect_all()
 
 
 # Start program
@@ -50,24 +42,42 @@ if __name__ == '__main__':
 
     # Iterate through each line of original_csv, processing images as we
     # go along.
+    count = 0
     for index, row in original_csv.iterrows():
-        shortcode = row['shortcode']
+        short_code = row['shortcode']
         likes = row['edge_liked_by_count']
-        file_name = shortcode + ".jpg"
+        followers = row['user_followers']
+        posts = row['user_posts']
+        following = row['user_following']
+        file_name = short_code + ".jpg"
         tmp_path = os.path.join(opts.image_dir, file_name)
 
         # Check if file exists and process if it does
         if os.path.isfile(tmp_path):
             file_name = str(row.name) + ".jpg"
-            [model, product, dom_colour] = process_image(tmp_path, file_name)
-            new_csv.append((file_name, shortcode, likes, model, product,
-                            dom_colour))
+            goog_cv, msft_face, msft_cv = process_image(tmp_path, file_name)
+
+            faces = len(msft_face)
+
+            # FIX
+            # new_csv.append((file_name, short_code, likes, followers, posts,
+            #                 following, model, product, dom_colour))
+            new_csv.append((file_name, short_code, likes, followers, posts,
+                            following, faces))
         else:
-            print("Image shortcode: {} not found".format(shortcode))
+            print("Image short-code: {} not found".format(short_code))
 
         # Convert all detected features/relevant information to Pandas
         # DataFrame and then convert that to CSV format for saving on disk.
-        column_names = ['file_name', 'shortcode', 'likes', 'model', 'product',
+        # column_names = ['file_name', 'short_code', 'likes', 'followers',
+        #                 'posts', 'following', 'model', 'product',
+        #                 'dominant_colour']
+        column_names = ['file_name', 'short_code', 'likes', 'followers',
+                        'posts', 'following', 'model', 'product',
                         'dominant_colour']
         frame = pd.DataFrame(new_csv, columns=column_names)
         frame.to_csv('output/details.csv', index=None)
+
+        if count >= 0:
+            break
+        count += 1
