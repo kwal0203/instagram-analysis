@@ -42,7 +42,7 @@ if __name__ == '__main__':
 
     # Iterate through each line of original_csv, processing images as we
     # go along.
-    count = 0
+    # count = 0
     for index, row in original_csv.iterrows():
         short_code = row['shortcode']
         likes = row['edge_liked_by_count']
@@ -77,13 +77,15 @@ if __name__ == '__main__':
             age = -1
             emotion = "unknown"
 
+            # Hack: Just using data of first face if there are multiple faces
             if msft_face:
-                smile = msft_face['faceAttributes']['smile']
-                gender = msft_face['faceAttributes']['gender']
-                age = msft_face['faceAttributes']['age']
+                smile = msft_face[0]['faceAttributes']['smile']
+                gender = msft_face[0]['faceAttributes']['gender']
+                age = msft_face[0]['faceAttributes']['age']
                 emotion = max(
-                    msft_face['faceAttributes']['emotion'].keys(),
-                    key=(lambda key: msft_face['faceAttributes']['emotion'][key]))
+                    msft_face[0]['faceAttributes']['emotion'].keys(),
+                    key=(lambda key:
+                         msft_face[0]['faceAttributes']['emotion'][key]))
 
             # Colour attributes from Microsoft CV API
             dom_fore_colour = msft_cv['color']['dominantColorForeground']
@@ -106,6 +108,6 @@ if __name__ == '__main__':
         frame = pd.DataFrame(new_csv, columns=column_names)
         frame.to_csv('output/details.csv', index=None)
 
-        if count >= 0:
-            break
-        count += 1
+        # if count >= 8:
+        #     break
+        # count += 1
