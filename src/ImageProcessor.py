@@ -21,6 +21,7 @@ class ImageProcessor:
         self.client = vision.ImageAnnotatorClient.\
             from_service_account_json('key.json')
         self.opened_file = io.open(self.path, 'rb').read()
+        self.opened_file_cv2 = cv2.imread(path)
         self.image = vision.types.Image(content=self.opened_file)
         self.microsoft_key = '2d8273cbfa7a42beaeefa81b444fa472'
         self.azure_url = 'https://australiaeast.api.cognitive.microsoft.com/'
@@ -53,17 +54,17 @@ class ImageProcessor:
         # List of facial attributes we can get:
         # age, gender, headPose, smile, facialHair, glasses, emotion, hair,
         # makeup, occlusion, accessories, blur, exposure, noise
-        print("Number of faces:   {}".format(len(faces)), end='\n\n')
-        for face in faces:
-            curr_emotion = max(
-                face['faceAttributes']['emotion'].keys(),
-                key=(lambda key: face['faceAttributes']['emotion'][key]))
-
-            print("Smile:   {}".format(face['faceAttributes']['smile']))
-            print("Gender:  {}".format(face['faceAttributes']['gender']))
-            print("Age:     {}".format(face['faceAttributes']['age']))
-            print("Emotion: {}".format(curr_emotion))
-            print("\n")
+        # print("Number of faces:   {}".format(len(faces)), end='\n\n')
+        # for face in faces:
+        #     curr_emotion = max(
+        #         face['faceAttributes']['emotion'].keys(),
+        #         key=(lambda key: face['faceAttributes']['emotion'][key]))
+        #
+        #     print("Smile:   {}".format(face['faceAttributes']['smile']))
+        #     print("Gender:  {}".format(face['faceAttributes']['gender']))
+        #     print("Age:     {}".format(face['faceAttributes']['age']))
+        #     print("Emotion: {}".format(curr_emotion))
+        #     print("\n")
 
         return faces
 
@@ -90,27 +91,9 @@ class ImageProcessor:
 
         return analysis
 
-    def detect_all(self):
-        # Get information from Google Vision API
-        print("----- Return all information from Google Vision API -----")
-        google_response = self.google_request()
-        # print(google_response)
-
-        # Get information from Microsoft Face API
-        print("----- Return all information from Microsoft Face API -----")
-        microsoft_face_response = self.microsoft_face_request()
-        # print(microsoft_face_response)
-
-        # Get information from Microsoft Computer Vision API
-        print("----- Return all information from Microsoft Object API -----")
-        microsoft_cv_response = self.microsoft_cv_request()
-        # print(microsoft_cv_response)
-
-        return google_response, microsoft_face_response, microsoft_cv_response
-
     def image_colorfulness(self):
         # split the image into its respective RGB components
-        (B, G, R) = cv2.split(self.opened_file.astype("float"))
+        (B, G, R) = cv2.split(self.opened_file_cv2.astype("float"))
 
         # compute rg = R - G
         rg = np.absolute(R - G)
@@ -127,10 +110,10 @@ class ImageProcessor:
         mean_root = np.sqrt((rbMean ** 2) + (ybMean ** 2))
 
         # derive the "colorfulness" metric and return it
-        return std_root + (0.3 * mean_root)
+        return round(std_root + (0.3 * mean_root))
 
     def number_of_lines(self):
-        gray = cv2.cvtColor(self.opened_file, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2GRAY)
         re_sized = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
         edges = cv2.Canny(re_sized, 50, 150, apertureSize=3)
         lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
@@ -142,12 +125,46 @@ class ImageProcessor:
 
     def smooth(self):
         # return the percentage of smooth areas"
-        gray = cv2.cvtColor(self.opened_file, cv2.COLOR_BGR2GRAY)
+        gray = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2GRAY)
         filtered_image = generic_filter(gray, np.std, size=3)
         smooth_area = filtered_image == 0
         percent = np.count_nonzero(smooth_area) / smooth_area.size
 
-        return percent
+        return round(percent, 2)
+
+    def detect_all(self):
+        # Get information from Google Vision API
+        print("----- Return all information from Google Vision API -----")
+        google_response = self.google_request()
+        # print(google_response)
+
+        # Get information from Microsoft Face API
+        print("----- Return all information from Microsoft Face API -----")
+        microsoft_face_response = self.microsoft_face_request()
+        # print(microsoft_face_response)
+
+        # Get information from Microsoft Computer Vision API
+        print("----- Return all information from Microsoft Object API -----")
+        microsoft_cv_response = self.microsoft_cv_request()
+        # print(microsoft_cv_response)
+
+        # Use OpenCV to evaluate 'colourfulness' of an image
+        print("----- OpenCV: Colour evaluation -----")
+        colour_response = self.image_colorfulness()
+        # print(colour_response)
+
+        # Use OpenCV to determine how many lines are in an image
+        print("----- OpenCV: Line evaluation -----")
+        line_response = self.number_of_lines()
+        # print(line_response)
+
+        # Use OpenCV to determine percentage of image that is 'smooth'
+        print("----- OpenCV: Smoothness evaluation -----")
+        smooth_response = self.smooth()
+        # print(smooth_response)
+
+        return (google_response, microsoft_face_response, microsoft_cv_response,
+                colour_response, line_response, smooth_response)
 
     # The following functions can be used to query API services individually
     # rather than doing everything together as above in 'detect_all().
@@ -155,7 +172,7 @@ class ImageProcessor:
     # This function detects faces in a given image using the Google Cloud Vision
     # API.
     def detect_faces(self):
-        print("Detecting faces in file: {}".format(self.path))
+        # print("Detecting faces in file: {}".format(self.path))
         response = self.client.face_detection(image=self.image)
         faces = response.face_annotations
 
@@ -166,7 +183,7 @@ class ImageProcessor:
     # This function detects the dominant colours in a given image using the
     # Google Cloud Vision API.
     def detect_colours(self):
-        print("Detecting colours in file: {}".format(self.path))
+        # print("Detecting colours in file: {}".format(self.path))
         response = self.client.image_properties(image=self.image)
         props = response.image_properties_annotation
 

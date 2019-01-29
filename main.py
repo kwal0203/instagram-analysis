@@ -17,10 +17,6 @@ def process_image(image_path, name):
     # Initialize ImageProcessor
     image_processor = ImageProcessor(image_path)
 
-    image_colorfulness
-    number_of_lines
-    smooth
-
     return image_processor.detect_all()
 
 
@@ -46,7 +42,7 @@ if __name__ == '__main__':
 
     # Iterate through each line of original_csv, processing images as we
     # go along.
-    # count = 0
+    count = 0
     for index, row in original_csv.iterrows():
         short_code = row['shortcode']
         likes = row['edge_liked_by_count']
@@ -59,7 +55,8 @@ if __name__ == '__main__':
         # Check if file exists and process if it does
         if os.path.isfile(tmp_path):
             file_name = str(row.name) + ".jpg"
-            goog_cv, msft_face, msft_cv = process_image(tmp_path, file_name)
+            goog_cv, msft_face, msft_cv, saturation, lines, smooth =\
+                process_image(tmp_path, file_name)
 
             # Create string of labels returned from Google
             labels = ""
@@ -83,7 +80,7 @@ if __name__ == '__main__':
 
             # Hack: Just using data of first face if there are multiple faces
             if msft_face:
-                smile = msft_face[0]['faceAttributes']['smile']
+                smile = msft_face[0]['faceAttributes']['smile'] >= 0.5
                 gender = msft_face[0]['faceAttributes']['gender']
                 age = msft_face[0]['faceAttributes']['age']
                 emotion = max(
@@ -98,7 +95,8 @@ if __name__ == '__main__':
             new_csv.append((file_name, short_code, likes, followers, posts,
                             following, faces, model_strategy,
                             product_strategy, smile, gender, age, emotion,
-                            dom_fore_colour, dom_back_colour, labels))
+                            dom_fore_colour, dom_back_colour, labels,
+                            saturation, lines, smooth))
         else:
             print("Image short-code: {} not found".format(short_code))
 
@@ -108,10 +106,10 @@ if __name__ == '__main__':
                         'posts', 'following', 'faces', 'model_strategy',
                         'product_strategy', 'smile', 'gender', 'age',
                         'emotion', 'dom_fore_colour', 'dom_back_colour',
-                        'labels']
+                        'labels', 'saturation', 'lines', 'smoothness']
         frame = pd.DataFrame(new_csv, columns=column_names)
         frame.to_csv('output/details.csv', index=None)
 
-        # if count >= 8:
-        #     break
-        # count += 1
+        if count >= 2:
+            break
+        count += 1
