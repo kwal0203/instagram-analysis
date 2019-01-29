@@ -17,6 +17,10 @@ def process_image(image_path, name):
     # Initialize ImageProcessor
     image_processor = ImageProcessor(image_path)
 
+    image_colorfulness
+    number_of_lines
+    smooth
+
     return image_processor.detect_all()
 
 

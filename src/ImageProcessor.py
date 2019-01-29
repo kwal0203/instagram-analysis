@@ -1,7 +1,10 @@
 import io
+import cv2
 import math
 import requests
+import numpy as np
 import cognitive_face
+from scipy.ndimage.filters import generic_filter
 
 from google.cloud import vision
 from google.cloud.vision import types
@@ -105,6 +108,47 @@ class ImageProcessor:
 
         return google_response, microsoft_face_response, microsoft_cv_response
 
+    def image_colorfulness(self):
+        # split the image into its respective RGB components
+        (B, G, R) = cv2.split(self.opened_file.astype("float"))
+
+        # compute rg = R - G
+        rg = np.absolute(R - G)
+
+        # compute yb = 0.5 * (R + G) - B
+        yb = np.absolute(0.5 * (R + G) - B)
+
+        # compute the mean and standard deviation of both `rg` and `yb`
+        (rbMean, rbStd) = (np.mean(rg), np.std(rg))
+        (ybMean, ybStd) = (np.mean(yb), np.std(yb))
+
+        # combine the mean and standard deviations
+        std_root = np.sqrt((rbStd ** 2) + (ybStd ** 2))
+        mean_root = np.sqrt((rbMean ** 2) + (ybMean ** 2))
+
+        # derive the "colorfulness" metric and return it
+        return std_root + (0.3 * mean_root)
+
+    def number_of_lines(self):
+        gray = cv2.cvtColor(self.opened_file, cv2.COLOR_BGR2GRAY)
+        re_sized = cv2.resize(gray, (0, 0), fx=0.5, fy=0.5)
+        edges = cv2.Canny(re_sized, 50, 150, apertureSize=3)
+        lines = cv2.HoughLines(edges, 1, np.pi / 180, 200)
+
+        if lines is None:
+            return 0
+        else:
+            return len(lines)
+
+    def smooth(self):
+        # return the percentage of smooth areas"
+        gray = cv2.cvtColor(self.opened_file, cv2.COLOR_BGR2GRAY)
+        filtered_image = generic_filter(gray, np.std, size=3)
+        smooth_area = filtered_image == 0
+        percent = np.count_nonzero(smooth_area) / smooth_area.size
+
+        return percent
+
     # The following functions can be used to query API services individually
     # rather than doing everything together as above in 'detect_all().
 
@@ -127,7 +171,7 @@ class ImageProcessor:
         props = response.image_properties_annotation
 
         # Sort dominant colours by 'score' property
-        props.dominant_colors.colors.sort(key=lambda x: x.score, reverse=True)
+        props.dominant_colors.colors.sort(key=lambda col: col.score, reverse=True)
 
         # Get the first element of sorted list i.e. element with highest score
         tmp_colour = props.dominant_colors.colors[0]
@@ -176,3 +220,4 @@ class ImageProcessor:
         #     ("Green", green) if green > num else (dominant_colour, num)
 
         return dominant_colour
+
