@@ -1,7 +1,6 @@
 import pandas as pd
 import shutil
 import os
-import sys
 
 from src.ImageProcessor import ImageProcessor
 from src.Utilities import Utilities
@@ -33,22 +32,29 @@ if __name__ == '__main__':
     # Create output directories
     util.create_directories(opts.new_details, opts.new_image_dir)
 
-    # Read CSV file provided by company (DHC)
+    # Read CSV files provided by company (DHC)
     original_csv = pd.read_csv(opts.details)
     label_csv = pd.read_csv(opts.labels)
-
-    # print(label_csv.head())
-    # sys.exit()
 
     # Initialize empty list which will be used to store relevant details
     # for each image i.e. details extracted from DHC original_csv and other
     # detected features during analysis.
     new_csv = []
 
-    # Iterate through each line of original_csv, processing images as we
-    # go along.
+    # Count variable is used to keep track of (and print on screen) how many
+    # lines we have processed so far.
     count = 1
+
+    # Timer is used to stop the for-loop when it reaches a certain number
+    timer = 0
+
+    # The following for-loop goes through each line of the 'original_csv' file
+    # provided by the company. Each row corresponds to an Instagram image and
+    # contains information we need including Instagram likes, followers, posts
+    # etc.
     for index, row in original_csv.iterrows():
+        # The following lines store the information found in the CSV and
+        # updates each time we go to a new line.
         likes = row['edge_liked_by_count']
         followers = row['user_followers']
         posts = row['user_posts']
@@ -57,16 +63,30 @@ if __name__ == '__main__':
         if short_code[-1] == "'":
             short_code = short_code[:-1]
         original_file_name = short_code + ".jpg"
+
+        # We create a computer system PATH (like a location) to the Instagram
+        # image that the current row is associated with.
         tmp_path = os.path.join(opts.image_dir, original_file_name)
 
-        # Check if file exists and process if it does
+        # Check if the PATH we created actually leads to a file (our PATH may
+        # not lead to a file if we made a mistake or the file is missing)
         if os.path.isfile(tmp_path):
+            # Print number of lines processed so far
             print("Count: {}".format(count))
+
+            # Because the Instagram images have messy names like
+            # 'BcMylPTlU4N.jpg', this line re-names it to: 'ROW_NUMBER.jpg'
+            # i.e. if we are on row 5, the new name of the file will be '5.jpg'
             file_name = str(row.name) + ".jpg"
+
+            # Call the process_image function (see above around line 13 of this
+            # code) and five the function the file path we created.
             goog_cv, msft_face, msft_cv, saturation, lines, smooth =\
                 process_image(tmp_path, file_name)
 
-            # Create string of labels returned from Google
+            # The following lines get the output of the Google API (object
+            # detection) and create a string containing names of all objects
+            # detected.
             labels = ""
             space = False
             for label in goog_cv.responses[0].label_annotations:
@@ -75,19 +95,23 @@ if __name__ == '__main__':
                 space = True
                 labels += label.description
 
-            # Need to fix this for multiple faces
+            # The following lines use the output of the Microsoft Azure Face
+            # API
             faces = len(msft_face)
             model_strategy = (faces > 0)
             product_strategy = not model_strategy
 
-            # Default attributes
+            # Default attributes to use if no faces are found.
             smile = False
             gender = "unknown"
             age = -1
             emotion = "unknown"
             model_and_product = False
 
-            # Hack: Just using data of first face if there are multiple faces
+            # TODO: Fix for multiple faces
+            # The following lines record characteristics of detected faces
+            # such as whether they are smiling/what emotion is being displayed
+            # etc.
             if msft_face:
                 smile = msft_face[0]['faceAttributes']['smile'] >= 0.5
                 gender = msft_face[0]['faceAttributes']['gender']
@@ -97,18 +121,15 @@ if __name__ == '__main__':
                     key=(lambda key:
                          msft_face[0]['faceAttributes']['emotion'][key]))
 
+                # Set threshold for model + product strategy here
                 file_column = label_csv[original_file_name]
-                # max_val = max(file_column)
-                # min_val = min(i for i in file_column if i > 0)
-                # print("Min: {}".format(min_val))
-                # print("Max: {}".format(max_val))
-                # sys.exit()
                 model_and_product = max(file_column) > 0.35
 
             # Colour attributes from Microsoft CV API
             dom_fore_colour = msft_cv['color']['dominantColorForeground']
             dom_back_colour = msft_cv['color']['dominantColorBackground']
 
+            # Put all the features we have detected into a Python list.
             new_csv.append((file_name, short_code, likes, followers, posts,
                             following, faces, model_strategy,
                             product_strategy, model_and_product, smile, gender,
@@ -117,8 +138,7 @@ if __name__ == '__main__':
         else:
             print("Image short-code: {} not found".format(short_code))
 
-        # Convert all detected features/relevant information to Pandas
-        # DataFrame and then convert that to CSV format for saving on disk.
+        # Convert the list with all detected features into a Pandas DataFrame.
         column_names = ['file_name', 'short_code', 'likes', 'followers',
                         'posts', 'following', 'faces', 'model_strategy',
                         'product_strategy', 'model_product_strategy', 'smile',
@@ -126,8 +146,12 @@ if __name__ == '__main__':
                         'dom_back_colour', 'labels', 'saturation', 'lines',
                         'smoothness']
         frame = pd.DataFrame(new_csv, columns=column_names)
+
+        # Convert Pandas DataFrame to CSV file and store on disk. This file can
+        # be used for the statistical analysis.
         frame.to_csv('output/details.csv', index=None)
 
-        # if count >= 8:
-        #     break
+        # Set timer value to stop program at here
+        if timer >= 8:
+            break
         count += 1
