@@ -12,6 +12,8 @@ class Utilities:
         tmp_parser = optparse.OptionParser()
         tmp_parser.add_option("-d", "--details", dest="details", type="string",
                               help="path to details CSV file")
+        tmp_parser.add_option("-l", "--labels", dest="labels", type="string",
+                              help="path to labels CSV file")
         tmp_parser.add_option("-i", "--image_dir", dest="image_dir", type="string",
                               help="name of directory holding images")
         tmp_parser.add_option("-a", "--new_details", dest="new_details",
@@ -19,6 +21,7 @@ class Utilities:
         tmp_parser.add_option("-b", "--new_image_dir", dest="new_image_dir",
                               type="string", help="output image directory")
         tmp_parser.set_defaults(details="2526_details/details.csv",
+                                labels="2526_details/labels.csv",
                                 image_dir="2526_images/", new_details="output/",
                                 new_image_dir="output/images")
 

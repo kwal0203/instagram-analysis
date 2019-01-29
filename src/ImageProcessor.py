@@ -162,6 +162,7 @@ class ImageProcessor:
         print("----- OpenCV: Smoothness evaluation -----")
         smooth_response = self.smooth()
         # print(smooth_response)
+        print()
 
         return (google_response, microsoft_face_response, microsoft_cv_response,
                 colour_response, line_response, smooth_response)

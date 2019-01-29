@@ -1,6 +1,7 @@
 import pandas as pd
 import shutil
 import os
+import sys
 
 from src.ImageProcessor import ImageProcessor
 from src.Utilities import Utilities
@@ -34,6 +35,10 @@ if __name__ == '__main__':
 
     # Read CSV file provided by company (DHC)
     original_csv = pd.read_csv(opts.details)
+    label_csv = pd.read_csv(opts.labels)
+
+    # print(label_csv.head())
+    # sys.exit()
 
     # Initialize empty list which will be used to store relevant details
     # for each image i.e. details extracted from DHC original_csv and other
@@ -42,18 +47,21 @@ if __name__ == '__main__':
 
     # Iterate through each line of original_csv, processing images as we
     # go along.
-    count = 0
+    count = 1
     for index, row in original_csv.iterrows():
-        short_code = row['shortcode']
         likes = row['edge_liked_by_count']
         followers = row['user_followers']
         posts = row['user_posts']
         following = row['user_following']
-        file_name = short_code + ".jpg"
-        tmp_path = os.path.join(opts.image_dir, file_name)
+        short_code = row['shortcode']
+        if short_code[-1] == "'":
+            short_code = short_code[:-1]
+        original_file_name = short_code + ".jpg"
+        tmp_path = os.path.join(opts.image_dir, original_file_name)
 
         # Check if file exists and process if it does
         if os.path.isfile(tmp_path):
+            print("Count: {}".format(count))
             file_name = str(row.name) + ".jpg"
             goog_cv, msft_face, msft_cv, saturation, lines, smooth =\
                 process_image(tmp_path, file_name)
@@ -77,6 +85,7 @@ if __name__ == '__main__':
             gender = "unknown"
             age = -1
             emotion = "unknown"
+            model_and_product = False
 
             # Hack: Just using data of first face if there are multiple faces
             if msft_face:
@@ -88,15 +97,23 @@ if __name__ == '__main__':
                     key=(lambda key:
                          msft_face[0]['faceAttributes']['emotion'][key]))
 
+                file_column = label_csv[original_file_name]
+                # max_val = max(file_column)
+                # min_val = min(i for i in file_column if i > 0)
+                # print("Min: {}".format(min_val))
+                # print("Max: {}".format(max_val))
+                # sys.exit()
+                model_and_product = max(file_column) > 0.35
+
             # Colour attributes from Microsoft CV API
             dom_fore_colour = msft_cv['color']['dominantColorForeground']
             dom_back_colour = msft_cv['color']['dominantColorBackground']
 
             new_csv.append((file_name, short_code, likes, followers, posts,
                             following, faces, model_strategy,
-                            product_strategy, smile, gender, age, emotion,
-                            dom_fore_colour, dom_back_colour, labels,
-                            saturation, lines, smooth))
+                            product_strategy, model_and_product, smile, gender,
+                            age, emotion, dom_fore_colour, dom_back_colour,
+                            labels, saturation, lines, smooth))
         else:
             print("Image short-code: {} not found".format(short_code))
 
@@ -104,12 +121,13 @@ if __name__ == '__main__':
         # DataFrame and then convert that to CSV format for saving on disk.
         column_names = ['file_name', 'short_code', 'likes', 'followers',
                         'posts', 'following', 'faces', 'model_strategy',
-                        'product_strategy', 'smile', 'gender', 'age',
-                        'emotion', 'dom_fore_colour', 'dom_back_colour',
-                        'labels', 'saturation', 'lines', 'smoothness']
+                        'product_strategy', 'model_product_strategy', 'smile',
+                        'gender', 'age', 'emotion', 'dom_fore_colour',
+                        'dom_back_colour', 'labels', 'saturation', 'lines',
+                        'smoothness']
         frame = pd.DataFrame(new_csv, columns=column_names)
         frame.to_csv('output/details.csv', index=None)
 
-        if count >= 2:
-            break
+        # if count >= 8:
+        #     break
         count += 1
