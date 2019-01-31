@@ -210,9 +210,9 @@ class ImageProcessor:
         # print(line_response)
 
         # Use OpenCV to determine percentage of image that is 'smooth'
-        print("----- OpenCV: Smoothness evaluation -----")
-        smooth_response = self.smooth()
-        response.append(smooth_response)
+        # print("----- OpenCV: Smoothness evaluation -----")
+        # smooth_response = self.smooth()
+        # response.append(smooth_response)
         # print(smooth_response)
 
         # Use OpenCV to determine the saturation of an image

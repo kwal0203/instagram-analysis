@@ -46,7 +46,7 @@ if __name__ == '__main__':
     count = 1
 
     # Timer is used to stop the for-loop when it reaches a certain number
-    timer = 0
+    # timer = 0
 
     # The following for-loop goes through each line of the 'original_csv' file
     # provided by the company. Each row corresponds to an Instagram image and
@@ -137,20 +137,20 @@ if __name__ == '__main__':
             # Return OpenCV responses
             colourfulness = response_list[3]
             lines = response_list[4]
-            smooth = response_list[5]
-            saturation = response_list[6]
-            brightness = response_list[7]
-            contrast = response_list[8]
-            clarity = response_list[9]
-            hue = response_list[10]
-            balance = response_list[11]
+            # smooth = response_list[5]
+            saturation = response_list[5]
+            brightness = response_list[6]
+            contrast = response_list[7]
+            clarity = response_list[8]
+            hue = response_list[9]
+            balance = response_list[10]
 
             # Put all the features we have detected into a Python list.
             new_csv.append((file_name, short_code, likes, followers, posts,
                             following, faces, model_strategy,
                             product_strategy, model_and_product, smile, gender,
                             age, emotion, dom_fore_colour, dom_back_colour,
-                            labels, colourfulness, lines, smooth, saturation,
+                            labels, colourfulness, lines, saturation,
                             brightness, contrast, clarity, hue, balance))
         else:
             print("Image short-code: {} not found".format(short_code))
@@ -161,7 +161,7 @@ if __name__ == '__main__':
                         'product_strategy', 'model_product_strategy', 'smile',
                         'gender', 'age', 'emotion', 'dom_fore_colour',
                         'dom_back_colour', 'labels', 'colourfulness', 'lines',
-                        'smoothness', 'saturation', 'brightness', 'contrast',
+                        'saturation', 'brightness', 'contrast',
                         'clarity', 'hue', 'balance']
         frame = pd.DataFrame(new_csv, columns=column_names)
 
@@ -170,7 +170,7 @@ if __name__ == '__main__':
         frame.to_csv('output/details.csv', index=None)
 
         # Set timer value to stop program at here
-        if timer >= 8:
-            break
+        # if timer >= 8:
+        #     break
         count += 1
-        timer += 1
+        # timer += 1
