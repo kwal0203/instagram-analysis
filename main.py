@@ -81,15 +81,18 @@ if __name__ == '__main__':
 
             # Call the process_image function (see above around line 13 of this
             # code) and five the function the file path we created.
-            goog_cv, msft_face, msft_cv, saturation, lines, smooth =\
-                process_image(tmp_path, file_name)
+            # goog_cv, msft_face, msft_cv, saturation, lines, smooth =\
+            #     process_image(tmp_path, file_name)
+
+            response_list = process_image(tmp_path, file_name)
 
             # The following lines get the output of the Google API (object
             # detection) and create a string containing names of all objects
             # detected.
             labels = ""
             space = False
-            for label in goog_cv.responses[0].label_annotations:
+            # for label in goog_cv.responses[0].label_annotations:
+            for label in response_list[0].responses[0].label_annotations:
                 if space:
                     labels += " "
                 space = True
@@ -97,6 +100,7 @@ if __name__ == '__main__':
 
             # The following lines use the output of the Microsoft Azure Face
             # API
+            msft_face = response_list[1]
             faces = len(msft_face)
             model_strategy = (faces > 0)
             product_strategy = not model_strategy
@@ -126,15 +130,28 @@ if __name__ == '__main__':
                 model_and_product = max(file_column) > 0.35
 
             # Colour attributes from Microsoft CV API
+            msft_cv = response_list[2]
             dom_fore_colour = msft_cv['color']['dominantColorForeground']
             dom_back_colour = msft_cv['color']['dominantColorBackground']
+
+            # Return OpenCV responses
+            colourfulness = response_list[3]
+            lines = response_list[4]
+            smooth = response_list[5]
+            saturation = response_list[6]
+            brightness = response_list[7]
+            contrast = response_list[8]
+            clarity = response_list[9]
+            hue = response_list[10]
+            balance = response_list[11]
 
             # Put all the features we have detected into a Python list.
             new_csv.append((file_name, short_code, likes, followers, posts,
                             following, faces, model_strategy,
                             product_strategy, model_and_product, smile, gender,
                             age, emotion, dom_fore_colour, dom_back_colour,
-                            labels, saturation, lines, smooth))
+                            labels, colourfulness, lines, smooth, saturation,
+                            brightness, contrast, clarity, hue, balance))
         else:
             print("Image short-code: {} not found".format(short_code))
 
@@ -143,8 +160,9 @@ if __name__ == '__main__':
                         'posts', 'following', 'faces', 'model_strategy',
                         'product_strategy', 'model_product_strategy', 'smile',
                         'gender', 'age', 'emotion', 'dom_fore_colour',
-                        'dom_back_colour', 'labels', 'saturation', 'lines',
-                        'smoothness']
+                        'dom_back_colour', 'labels', 'colourfulness', 'lines',
+                        'smoothness', 'saturation', 'brightness', 'contrast',
+                        'clarity', 'hue', 'balance']
         frame = pd.DataFrame(new_csv, columns=column_names)
 
         # Convert Pandas DataFrame to CSV file and store on disk. This file can

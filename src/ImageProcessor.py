@@ -132,40 +132,132 @@ class ImageProcessor:
 
         return round(percent, 2)
 
+    def saturation(self):
+        hsv = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2HSV)
+
+        # saturation is the s channel
+        s = hsv[:, :, 1]
+
+        return round(s.mean(), 2)
+
+    def brightness(self):
+        gray = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2GRAY)
+
+        return round(gray.mean(), 2)
+
+    def contrast_of_brightness(self):
+        gray = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2GRAY)
+
+        return round(gray.std(), 2)
+
+    def image_clarity(self):
+        gray = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2GRAY) / 255.0
+        bright = gray >= .7
+
+        return round(bright.sum() / bright.size, 2)
+
+    def warm_hue(self):
+        hsv = cv2.cvtColor(self.opened_file_cv2, cv2.COLOR_BGR2HSV)
+
+        # hue is the h channel
+        h = hsv[:, :, 0]
+        warm = (h >= 30) & (h <= 110)
+
+        return round(warm.sum() / warm.size, 2)
+
+    def visual_balance_color(self):
+        mid = int(self.opened_file_cv2.shape[1] / 2)
+        left_half = np.array(self.opened_file_cv2[:, 0:mid, ], dtype='int')
+        right_half = np.flip(np.array(self.opened_file_cv2[:, mid:2 * mid, ],
+                                      dtype='int'), axis=1)
+        dif_square = np.square(left_half - right_half)
+        euclidean = np.sqrt(dif_square.sum(axis=2))
+
+        return round(-euclidean.mean(), 2)
+
     def detect_all(self):
+        # Response list
+        response = []
+
         # Get information from Google Vision API
         print("----- Return all information from Google Vision API -----")
         google_response = self.google_request()
+        response.append(google_response)
         # print(google_response)
 
         # Get information from Microsoft Face API
         print("----- Return all information from Microsoft Face API -----")
         microsoft_face_response = self.microsoft_face_request()
+        response.append(microsoft_face_response)
         # print(microsoft_face_response)
 
         # Get information from Microsoft Computer Vision API
         print("----- Return all information from Microsoft Object API -----")
         microsoft_cv_response = self.microsoft_cv_request()
+        response.append(microsoft_cv_response)
         # print(microsoft_cv_response)
 
         # Use OpenCV to evaluate 'colourfulness' of an image
         print("----- OpenCV: Colour evaluation -----")
         colour_response = self.image_colorfulness()
+        response.append(colour_response)
         # print(colour_response)
 
         # Use OpenCV to determine how many lines are in an image
         print("----- OpenCV: Line evaluation -----")
         line_response = self.number_of_lines()
+        response.append(line_response)
         # print(line_response)
 
         # Use OpenCV to determine percentage of image that is 'smooth'
         print("----- OpenCV: Smoothness evaluation -----")
         smooth_response = self.smooth()
+        response.append(smooth_response)
         # print(smooth_response)
+
+        # Use OpenCV to determine the saturation of an image
+        print("----- OpenCV: Saturation evaluation -----")
+        sat_response = self.saturation()
+        response.append(sat_response)
+        # print(sat_response)
+
+        # Use OpenCV to determine the brightness of an image
+        print("----- OpenCV: Brightness evaluation -----")
+        bright_response = self.brightness()
+        response.append(bright_response)
+        # print(bright_response)
+
+        # Use OpenCV to determine the contrast of brightness of an image
+        print("----- OpenCV: Contrast of rightness evaluation -----")
+        cob_response = self.contrast_of_brightness()
+        response.append(cob_response)
+        # print(cob_response)
+
+        # Use OpenCV to determine the clarity of an image
+        print("----- OpenCV: Clarity evaluation -----")
+        clarity_response = self.image_clarity()
+        response.append(clarity_response)
+        # print(clarity_response)
+
+        # Use OpenCV to determine if an image has a 'warm' hue
+        print("----- OpenCV: Warm hue evaluation -----")
+        hue_response = self.warm_hue()
+        response.append(hue_response)
+        # print(hue_response)
+
+        # Use OpenCV to determine the colour balance of an image
+        print("----- OpenCV: Colour balance evaluation -----")
+        balance_response = self.visual_balance_color()
+        response.append(balance_response)
+        # print(balance_response)
         print()
 
-        return (google_response, microsoft_face_response, microsoft_cv_response,
-                colour_response, line_response, smooth_response)
+        # return (google_response, microsoft_face_response, microsoft_cv_response,
+        #         colour_response, line_response, smooth_response, sat_response,
+        #         bright_response, cob_response, clarity_response, hue_response,
+        #         balance_response)
+
+        return response
 
     # The following functions can be used to query API services individually
     # rather than doing everything together as above in 'detect_all().
