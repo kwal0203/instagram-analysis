@@ -127,7 +127,7 @@ if __name__ == '__main__':
 
                 # Set threshold for model + product strategy here
                 file_column = label_csv[original_file_name]
-                model_and_product = max(file_column) > 0.35
+                model_and_product = max(file_column) > 0.05
 
             # Colour attributes from Microsoft CV API
             msft_cv = response_list[2]
@@ -173,3 +173,4 @@ if __name__ == '__main__':
         if timer >= 8:
             break
         count += 1
+        timer += 1
