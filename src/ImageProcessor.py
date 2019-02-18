@@ -23,7 +23,7 @@ class ImageProcessor:
         self.opened_file = io.open(self.path, 'rb').read()
         self.opened_file_cv2 = cv2.imread(path)
         self.image = vision.types.Image(content=self.opened_file)
-        self.microsoft_key = '2d8273cbfa7a42beaeefa81b444fa472'
+        self.microsoft_key = ''
         self.azure_url = 'https://australiaeast.api.cognitive.microsoft.com/'
         self.vision_url = self.azure_url + 'vision/v2.0/analyze'
         self.face_url = self.azure_url + 'face/v1.0/'
