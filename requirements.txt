@@ -8,7 +8,7 @@ google-auth==1.6.2
 google-cloud-vision==0.35.2
 googleapis-common-protos==1.5.6
 grpcio==1.18.0
-idna==2.8
+idna==3.7
 numpy==1.22.0
 pandas==0.23.4
 protobuf==3.18.3
